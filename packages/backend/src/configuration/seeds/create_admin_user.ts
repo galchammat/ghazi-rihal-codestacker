@@ -23,6 +23,7 @@ export async function seed(knex: Knex): Promise<void> {
     {
       email: process.env.ADMIN_EMAIL,
       password: hashedPassword,
+      role: "admin",
     }
   ]);
 }
