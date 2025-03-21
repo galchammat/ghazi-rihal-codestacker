@@ -1,11 +1,10 @@
-// filepath: /home/user/code/ghazi-rihal-codestacker/packages/backend/src/middleware/basicAuth.ts
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pgQuery } from "../services/pgClient";
 import { User } from "../schemas/userSchema";
 
 
-export async function authenticateBasic(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers['authorization'];
   if (!authHeader) {
     res.sendStatus(401);
