@@ -16,6 +16,7 @@ export const userSchema = z.object({
   id: z.number().optional(),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters long"),
+  name: z.string(),
   role: z.enum(roles),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
