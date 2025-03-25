@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Knex } from 'knex';
+import { pgQuery } from '../services/pgClient';
 import { clearanceLevels } from '../schemas/userSchema';
 import { assignmentRequestSchema } from '../schemas/assignmentSchema';
 import { authenticate } from '../middleware/authenticate';
@@ -18,14 +18,12 @@ router.post('/:caseId/assign', authenticate, authorize(["admin", "investigator"]
     const { caseId } = params;
     const { userId } = body;
 
-    const knex: Knex = req.app.get('knex');
-
-    const user = await knex('users').where({ id: userId }).first();
+    const user = await pgQuery('users').where({ id: userId }).first();
     if (!user) {
       res.status(404).json({ message: `User with id ${userId} not found` });
       return;
     }
-    const caseData = await knex('cases').where({ id: caseId }).first();
+    const caseData = await pgQuery('cases').where({ id: caseId }).first();
     if (!caseData) {
       res.status(404).json({ message: `Case with id ${caseId} not found` });
       return;
@@ -43,13 +41,15 @@ router.post('/:caseId/assign', authenticate, authorize(["admin", "investigator"]
       const caseClearanceIndex = clearanceLevels.indexOf(caseData.clearance);
 
       if (userClearanceIndex < caseClearanceIndex) {
-        res.status(403).json({ message: 'Officer does not have sufficient clearance to be assigned to this case' });
+        res.status(403).json({
+          message: `Officer ${user.name} with clearance level (${user.clearance}) does not have sufficient clearance (${caseData.clearance}) to be assigned to this case.`
+        });
         return;
       }
     }
 
     // Check if the assignment already exists
-    const existingAssignment = await knex('case_assignments')
+    const existingAssignment = await pgQuery('case_assignments')
       .where({ case_id: caseId, user_id: userId })
       .first();
 
@@ -58,7 +58,7 @@ router.post('/:caseId/assign', authenticate, authorize(["admin", "investigator"]
       return;
     }
 
-    await knex('case_assignments').insert({
+    await pgQuery('case_assignments').insert({
       case_id: caseId,
       user_id: userId
     });
@@ -81,9 +81,7 @@ router.delete('/:caseId/unassign', authenticate, authorize(["admin", "investigat
     const { caseId } = params;
     const { userId } = body;
 
-    const knex: Knex = req.app.get('knex');
-
-    const assignment = await knex('case_assignments')
+    const assignment = await pgQuery('case_assignments')
       .where({ case_id: caseId, user_id: userId })
       .first();
 
@@ -92,7 +90,7 @@ router.delete('/:caseId/unassign', authenticate, authorize(["admin", "investigat
       return;
     }
 
-    await knex('case_assignments')
+    await pgQuery('case_assignments')
       .where({ case_id: caseId, user_id: userId })
       .del();
 
@@ -103,4 +101,37 @@ router.delete('/:caseId/unassign', authenticate, authorize(["admin", "investigat
   }
 });
 
+// Route to return all assignees of a case given its ID
+router.get('/:caseId/assignees', authenticate, authorize(["admin", "investigator"]), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { caseId } = req.params;
+
+    const assignees = await pgQuery('case_assignments')
+      .join('users', 'case_assignments.user_id', 'users.id')
+      .select('users.id', 'users.name', 'users.role', 'users.clearance')
+      .where({ case_id: caseId });
+
+    res.status(200).json(assignees);
+    return;
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Route for officers to list all cases they've been assigned to
+router.get('/my-cases', authenticate, authorize(["officer", "auditor"]), async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id: userId } = res.locals.user;
+
+    const cases = await pgQuery('case_assignments')
+      .where({ user_id: userId })
+      .join('cases', 'case_assignments.case_id', 'cases.id')
+      .select('cases.id', 'cases.name');
+
+    res.status(200).json(cases);
+    return;
+  } catch (error) {
+    next(error);
+  }
+});
 export default router;

@@ -1,15 +1,7 @@
 import { z } from "zod";
 
 // Define roles
-export const roles = [
-  "admin",
-  "investigator",
-  "auditor",
-  "officer-critical",
-  "officer-high",
-  "officer-medium",
-  "officer-low",
-] as const;
+export const roles = ["admin", "investigator", "auditor", "officer"] as const;
 export type Role = typeof roles[number];
 
 // Define clearance levels

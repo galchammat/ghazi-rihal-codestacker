@@ -14,7 +14,7 @@ app.use(express.json());
 app.use("/users", userRoutes);
 
 // Use case-related routes
-app.use("cases/", assignmentRoutes);
+app.use("/cases", assignmentRoutes);
 
 app.use(errorHandler);
 
