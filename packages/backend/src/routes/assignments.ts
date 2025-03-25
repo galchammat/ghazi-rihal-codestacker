@@ -126,7 +126,7 @@ router.get('/my-cases', authenticate, authorize(["officer", "auditor"]), async (
     const cases = await pgQuery('case_assignments')
       .where({ user_id: userId })
       .join('cases', 'case_assignments.case_id', 'cases.id')
-      .select('cases.id', 'cases.name');
+      .select('cases.id', 'cases.case_name');
 
     res.status(200).json(cases);
     return;
