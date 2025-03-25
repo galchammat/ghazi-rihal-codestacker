@@ -1,7 +1,7 @@
-// filepath: /home/user/code/ghazi-rihal-codestacker/packages/backend/src/app.ts
 import express from "express";
 import dotenv from "dotenv";
 import userRoutes from "./routes/users";
+import assignmentRoutes from "./routes/assignments";
 import { errorHandler } from "./middleware/errorHandler";
 
 
@@ -12,6 +12,9 @@ app.use(express.json());
 
 // Use user routes
 app.use("/users", userRoutes);
+
+// Use case-related routes
+app.use("cases/", assignmentRoutes);
 
 app.use(errorHandler);
 

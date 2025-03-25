@@ -29,9 +29,9 @@ router.post("/", authenticate, authorize(["admin"]), async (req: Request, res: R
   }
 });
 
-router.put("/:id", authenticate, authorize(["admin"]), async (req: Request, res: Response, next: NextFunction) => {
+router.put("/:userId", authenticate, authorize(["admin"]), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = parseInt(req.params.id, 10);
+    const userId = parseInt(req.params.userId, 10);
     const parsedUser = userSchema.omit({ id: true }).partial().parse(req.body);
 
     if (parsedUser.password) {

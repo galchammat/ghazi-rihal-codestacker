@@ -10,8 +10,8 @@ export async function seed(knex: Knex): Promise<void> {
     area: "Downtown",
     city: "New York",
     created_by: 1,
-    type: "Criminal",
-    level: "High"
+    type: "criminal",
+    clearance: "high"
   });
 
   await knex("reports")

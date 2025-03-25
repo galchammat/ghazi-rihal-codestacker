@@ -32,7 +32,8 @@ export async function seed(knex: Knex): Promise<void> {
   // Create detective, officer, and auditor to be assigned to the seed case
   await knex("users").insert([
     { id: 101, name: "Detective Jane Smith", email: "investigator.jane@example.com", password: await bcrypt.hash("janesPa55wORD", 10), role: "investigator" },
-    { id: 102, name: "Officer Mike Johnson", email: "officer.mike@example.com", password: await bcrypt.hash("mikesPa55wORD", 10), role: "officer" },
-    { id: 104, name: "Auditor Alice Green", email: "auditor.alice@example.com", password: await bcrypt.hash("alicesPa55wORD", 10), role: "auditor" }
+    { id: 102, name: "Officer Mike Johnson", email: "officer.mike@example.com", password: await bcrypt.hash("mikesPa55wORD", 10), role: "officer", clearance: "high" },
+    { id: 104, name: "Auditor Alice Green", email: "auditor.alice@example.com", password: await bcrypt.hash("alicesPa55wORD", 10), role: "auditor", clearance: "critical" },
+    { id: 105, name: "Officer Jon Doe", email: "officer.jon@example.com", password: await bcrypt.hash("jonsPa55wORD", 10), role: "officer", clearance: "low" }
   ]);
 }

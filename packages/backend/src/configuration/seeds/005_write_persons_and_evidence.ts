@@ -18,7 +18,7 @@ export async function seed(knex: Knex): Promise<void> {
 
   // Inserts seed entries for evidence
   await knex("evidence").insert([
-    { case_id: 12345, type: "image", content: imageBuffer, deleted: false },
+    { case_id: 12345, type: "image", content: imageBuffer, remarks: "torn shirt", deleted: false },
     { case_id: 12345, type: "text", content: Buffer.from("This is a text evidence."), deleted: false }
   ]);
 
