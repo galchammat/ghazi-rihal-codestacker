@@ -61,6 +61,12 @@ router.post('/:caseId/evidence', authenticate, authorize(["officer", "admin", "i
       .insert({ ...evidenceData, case_id: parseInt(caseId, 10) })
       .returning('*');
 
+    await pgQuery('audit_logs').insert({
+      evidence_id: createdEvidence.id,
+      user_id: userId,
+      action: 'create'
+    });
+
     res.status(201).json(createdEvidence);
   } catch (error) {
     next(error);
@@ -152,6 +158,12 @@ router.patch('/evidence/:evidenceId/update', authenticate, authorize(["officer",
       .update(updatedFields)
       .returning('*');
 
+    await pgQuery('audit_logs').insert({
+      evidence_id: evidenceId,
+      user_id: userId,
+      action: 'update'
+    });
+
     res.status(200).json({ message: "Evidence updated successfully.", evidence: updatedEvidence[0] });
   } catch (error) {
     next(error);
@@ -184,6 +196,12 @@ router.patch('/evidence/:evidenceId/soft-delete', authenticate, authorize(["offi
       res.status(404).json({ message: "Evidence not found or already deleted." });
       return;
     }
+
+    await pgQuery('audit_logs').insert({
+      evidence_id: evidenceId,
+      user_id: userId,
+      action: 'soft-delete'
+    });
 
     res.status(200).json({ message: "Evidence soft-deleted successfully.", evidence: softDeletedEvidence[0] });
   } catch (error) {
