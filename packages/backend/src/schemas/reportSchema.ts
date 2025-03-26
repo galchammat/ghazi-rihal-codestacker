@@ -12,5 +12,7 @@ export const reportSchema = z.object({
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
-
 export type Report = z.infer<typeof reportSchema>;
+
+export const reportIdsSchema = z.array(reportSchema.shape.id.unwrap());
+export type ReportIds = z.infer<typeof reportIdsSchema>;

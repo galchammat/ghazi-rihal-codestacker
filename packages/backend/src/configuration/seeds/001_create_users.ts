@@ -22,6 +22,7 @@ export async function seed(knex: Knex): Promise<void> {
 
   await knex("users").insert([
     {
+      id: 1,
       email: process.env.ADMIN_EMAIL,
       password: hashedPassword,
       name: process.env.ADMIN_NAME,
