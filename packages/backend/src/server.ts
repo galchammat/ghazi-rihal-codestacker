@@ -4,6 +4,7 @@ import userRoutes from "./routes/users";
 import assignmentRoutes from "./routes/assignments";
 import caseRoutes from "./routes/cases";
 import reportRoutes from "./routes/reports";
+import evidenceRoutes from "./routes/evidence";
 import { errorHandler } from "./middleware/errorHandler";
 
 
@@ -18,6 +19,7 @@ app.use("/users", userRoutes);
 // Use case-related routes
 app.use("/cases", assignmentRoutes);
 app.use("/cases", caseRoutes);
+app.use("/cases", evidenceRoutes);
 
 // Use report routes
 app.use("/reports", reportRoutes);
