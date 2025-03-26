@@ -7,6 +7,7 @@ import reportRoutes from "./routes/reports";
 import evidenceRoutes from "./routes/evidence";
 import personsRoutes from "./routes/persons";
 import auditLogRoutes from "./routes/auditLogs";
+import analyticsRoutes from "./routes/analytics";
 import { errorHandler } from "./middleware/errorHandler";
 
 
@@ -24,6 +25,7 @@ app.use("/cases", caseRoutes);
 app.use("/cases", evidenceRoutes);
 app.use("/cases", personsRoutes);
 app.use("/cases", auditLogRoutes);
+app.use("/cases", analyticsRoutes);
 
 // Use report routes
 app.use("/reports", reportRoutes);
