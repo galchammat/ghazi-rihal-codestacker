@@ -6,11 +6,11 @@ import { personSchema, personUpdateSchema } from "../schemas/personSchema";
 
 const router = Router();
 
-// List all persons under a specific case
 router.get('/:caseId/persons', authenticate, authorize(["officer", "admin", "investigator"]), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { caseId } = req.params;
     const { id: userId, role } = res.locals.user;
+    const { type } = req.query; // Optional query parameter for filtering by type
 
     if (role === "officer") {
       const isAssigned = await pgQuery('case_assignments')
@@ -23,9 +23,13 @@ router.get('/:caseId/persons', authenticate, authorize(["officer", "admin", "inv
       }
     }
 
-    const persons = await pgQuery('persons')
-      .where({ case_id: caseId })
-      .select('*');
+    // Build the query
+    const query = pgQuery('persons').where({ case_id: caseId });
+    if (type) {
+      query.andWhere({ type }); // Filter by type if provided
+    }
+
+    const persons = await query.select('*');
 
     res.status(200).json(persons);
   } catch (error) {
@@ -63,7 +67,7 @@ router.post('/:caseId/persons', authenticate, authorize(["officer", "admin", "in
 });
 
 // Admins and investigators can update any information about persons
-router.patch('/persons/:personId', authenticate, authorize(["admin", "investigator"]), async (req: Request, res: Response, next: NextFunction) => {
+router.put('/persons/:personId', authenticate, authorize(["admin", "investigator"]), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { personId } = req.params;
 
