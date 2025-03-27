@@ -23,6 +23,7 @@ router.post(
 
       const deletionRequest = await pgQuery('deletion_requests')
         .where({ evidence_id: evidenceId, user_id: userId })
+        .andWhereNot({ status: 'finalized' })
         .first();
 
       if (!deletionRequest || deletionRequest.status === 'initiated') {
@@ -72,6 +73,7 @@ router.post(
 
       const deletionRequest = await pgQuery('deletion_requests')
         .where({ evidence_id: evidenceId, user_id: userId })
+        .andWhereNot({ status: 'finalized' })
         .first();
 
       if (!deletionRequest) {
@@ -88,10 +90,10 @@ router.post(
         if (!query || query !== 'yes') {
           await pgQuery('deletion_requests')
             .where({ evidence_id: evidenceId, user_id: userId })
-            .update({ status: 'failed' });
+            .del();
 
           res.status(400).json({
-            message: `The deletion was canceled because the query value received was "${query}". Only "yes" is accepted to confirm the deletion.`,
+            message: `The deletion was canceled because the query value received was (${query}). Only (yes) is accepted to confirm the deletion.`,
           });
           return;
         } else {
@@ -100,7 +102,7 @@ router.post(
             .update({ status: 'confirmed' });
 
           res.status(200).json({
-            message: `Confirmation received. To finalize, send a DELETE request to /cases/evidence/${evidenceId}?.`,
+            message: `Confirmation received. To finalize, send a DELETE request to /cases/evidence/${evidenceId}.`,
           });
           return;
         }
@@ -123,7 +125,6 @@ router.delete(
     try {
       const { evidenceId } = req.params;
       const { id: userId } = res.locals.user;
-      const { query } = req.query;
 
       const evidence = await pgQuery('evidence').where({ id: evidenceId }).first();
       if (!evidence) {
@@ -133,25 +134,26 @@ router.delete(
 
       const deletionRequest = await pgQuery('deletion_requests')
         .where({ evidence_id: evidenceId, user_id: userId })
+        .andWhereNot({ status: 'finalized' })
         .first();
 
       if (!deletionRequest) {
         res.status(404).json({
-          message: `Deletion request for Evidence ID: ${evidenceId} not found. Please initiate the deletion first and follow the confirmation steps. Initiate by sending POST /cases/evidence/:evidenceId/initiate-hard-delete.`,
+          message: `Deletion request for Evidence ID: ${evidenceId} not found. Please initiate the deletion first and follow the confirmation steps. Initiate by sending POST /cases/evidence/${evidenceId}/initiate-hard-delete.`,
         });
         return;
       } else if (deletionRequest.status === 'initiated') {
         res.status(400).json({
-          message: `Deletion request for Evidence ID: ${evidenceId} has not been confirmed yet. Please confirm the deletion first by sending POST /cases/evidence/${evidenceId}/confirm-hard-delete.`,
+          message: `Deletion request for Evidence ID: ${evidenceId} has not been confirmed yet. Please confirm the deletion first by sending POST /cases/evidence/${evidenceId}/confirm-hard-delete?query=yes.`,
         });
       } else if (deletionRequest.status === 'confirmed') {
-        await pgQuery('evidence').where({ id: evidenceId }).del();
-
         await pgQuery('audit_logs').insert({
           evidence_id: evidenceId,
           user_id: userId,
           action: 'hard-delete',
         });
+
+        await pgQuery('evidence').where({ id: evidenceId }).del();
 
         await pgQuery('deletion_requests')
           .where({ evidence_id: evidenceId, user_id: userId })
@@ -173,39 +175,114 @@ router.delete(
 );
 
 router.get(
-  '/evidence/:evidenceId/deletion-status',
+  '/evidence/:evidenceId/deletion-progress',
   authenticate,
   authorize(["admin"]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { evidenceId } = req.params;
 
-      const checkStatus = async () => {
-        const evidence = await pgQuery('evidence').where({ id: evidenceId }).first();
+      const pollForStatus = async (timeout = 30000, interval = 1000) => {
+        const startTime = Date.now();
 
-        if (!evidence) {
-          const auditLog = await pgQuery('audit_logs')
-            .where({ evidence_id: evidenceId, action: 'hard-delete' })
-            .first();
+        let previousStatus = null;
+        const initialRequest = await pgQuery('deletion_requests')
+          .where({ evidence_id: evidenceId })
+          .first();
 
-          if (auditLog) {
-            res.status(200).json({
-              status: 'completed',
-              message: `Evidence ID: ${evidenceId} has been permanently deleted.`,
-            });
-          } else {
-            res.status(500).json({
-              status: 'failed',
-              message: `Evidence ID: ${evidenceId} deletion failed.`,
-            });
-          }
+        if (!initialRequest) {
+          res.status(404).json({
+            status: 'not_found',
+            message: `No deletion request has been initiated for Evidence ID: ${evidenceId}. Please initiate a request before long polling for its status.`,
+          });
           return;
         }
 
-        setTimeout(checkStatus, 1000);
+        previousStatus = initialRequest.status;
+
+        while (Date.now() - startTime < timeout) {
+          const currentRequest = await pgQuery('deletion_requests')
+            .where({ evidence_id: evidenceId })
+            .first();
+
+          if (!currentRequest) {
+            const auditLog = await pgQuery('audit_logs')
+              .where({ evidence_id: evidenceId, action: 'hard-delete' })
+              .first();
+
+            if (auditLog) {
+              res.status(200).json({
+                status: 'finalized',
+                message: `Evidence ID: ${evidenceId} has been permanently deleted.`,
+              });
+            } else {
+              res.status(500).json({
+                status: 'failed',
+                message: `Evidence ID: ${evidenceId} deletion failed.`,
+              });
+            }
+            return;
+          }
+
+          if (currentRequest.status !== previousStatus) {
+            previousStatus = currentRequest.status;
+
+            if (currentRequest.status === 'initiated') {
+              res.status(200).json({
+                status: 'initiated',
+                message: `Deletion request for Evidence ID: ${evidenceId} has been initiated but not yet confirmed.`,
+              });
+              return;
+            }
+
+            if (currentRequest.status === 'confirmed') {
+              res.status(200).json({
+                status: 'confirmed',
+                message: `Deletion request for Evidence ID: ${evidenceId} has been confirmed but not yet finalized.`,
+              });
+              return;
+            }
+
+            if (currentRequest.status === 'canceled') {
+              res.status(200).json({
+                status: 'canceled',
+                message: `Deletion request for Evidence ID: ${evidenceId} has been canceled.`,
+              });
+              return;
+            }
+          }
+
+          const evidence = await pgQuery('evidence').where({ id: evidenceId }).first();
+
+          if (!evidence) {
+            const auditLog = await pgQuery('audit_logs')
+              .where({ evidence_id: evidenceId, action: 'hard-delete' })
+              .first();
+
+            if (auditLog) {
+              res.status(200).json({
+                status: 'finalized',
+                message: `Evidence ID: ${evidenceId} has been permanently deleted.`,
+              });
+            } else {
+              res.status(500).json({
+                status: 'failed',
+                message: `Evidence ID: ${evidenceId} deletion failed.`,
+              });
+            }
+            return;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, interval));
+        }
+
+        res.status(200).json({
+          status: previousStatus,
+          message: `The deletion status for Evidence ID: ${evidenceId} did not change within the timeout period.`,
+        });
       };
 
-      checkStatus();
+      await pollForStatus();
     } catch (error) {
       next(error);
     }
