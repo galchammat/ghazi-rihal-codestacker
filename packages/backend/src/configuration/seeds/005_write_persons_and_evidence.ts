@@ -13,7 +13,7 @@ export async function seed(knex: Knex): Promise<void> {
   ]);
 
   // Read an actual image file and convert it to a buffer
-  const imagePath = path.join(__dirname, '../cases/sampleEvidence.jpg');
+  const imagePath = path.join(__dirname, '../assets/sampleEvidence.jpg');
   const imageBuffer = fs.readFileSync(imagePath);
 
   // Inserts seed entries for evidence
