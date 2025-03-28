@@ -44,6 +44,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.4",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

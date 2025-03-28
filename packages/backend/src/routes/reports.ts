@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { pgQuery } from '../services/pgClient';
 import { reportSchema, Report } from '../schemas/reportSchema';
+import { sendEmail } from '../services/sendgrid';
 
 const router = Router();
 
@@ -11,6 +12,20 @@ router.post('/submit', async (req: Request, res: Response, next: NextFunction) =
 
     // Insert the report into the database
     const [createdReport] = await pgQuery('reports').insert(reportData).returning('id');
+
+    // Omit sensetive fields from the public details which are emailed
+    const publicReportDetails = {
+      name: reportData.name,
+      description: reportData.description,
+      area: reportData.area,
+      city: reportData.city,
+      date: reportData.createdAt,
+    };
+
+    await sendEmail({
+      subject: 'New crime reported',
+      text: `A crime report has been submitted with the following details: ${JSON.stringify(publicReportDetails, null, 4)}`,
+    });
 
     // Return the report ID
     res.status(201).json({ reportId: createdReport.id });

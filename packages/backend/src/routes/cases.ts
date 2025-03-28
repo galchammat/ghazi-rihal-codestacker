@@ -4,6 +4,7 @@ import { caseSchema, Case, caseStatusOptions } from '../schemas/caseSchema';
 import { reportIdsSchema, ReportIds } from '../schemas/reportSchema';
 import { authenticate } from '../middleware/authenticate';
 import { authorize } from '../middleware/authorize';
+import { sendEmail } from '../services/sendgrid';
 
 const router = Router();
 
@@ -23,6 +24,11 @@ router.post('/', authenticate, authorize(["admin", "investigator"]), async (req:
         .whereIn('id', reportIds)
         .update({ case_id: createdCase.id });
     }
+
+    await sendEmail({
+      subject: 'New Case Opened',
+      text: `A case has been opened with the following details: ${JSON.stringify(createdCase, null, 4)} in response to reports: ${reportIds.join(", ")}`,
+    });
 
     res.status(201).json(createdCase);
     return;
@@ -81,6 +87,11 @@ router.patch('/:caseId/status', authenticate, authorize(["officer", "admin", "in
     }
 
     await pgQuery('cases').where({ id: caseId }).update({ status });
+
+    await sendEmail({
+      subject: 'Case Status Update',
+      text: `Case ${caseId} status has been updated to ${status} by ${res.locals.user.name}, ${role}.`,
+    });
 
     res.status(200).json({ message: "Case status updated successfully." });
   } catch (error) {
