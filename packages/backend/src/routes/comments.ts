@@ -17,7 +17,7 @@ const commentRateLimiter = rateLimit({
 
 // Add a comment to a specific case
 router.post(
-  '/cases/:caseId/comments',
+  '/:caseId/comments',
   authenticate,
   authorize(["officer", "admin", "investigator"]),
   commentRateLimiter,
@@ -53,7 +53,7 @@ router.post(
 
 // Retrieve all comments for a specific case
 router.get(
-  '/cases/:caseId/comments',
+  '/:caseId/comments',
   authenticate,
   authorize(["officer", "admin", "investigator"]),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -82,7 +82,7 @@ router.get(
 
 // Delete a comment made by the user (Admins and Investigators only)
 router.delete(
-  '/cases/:caseId/comments/:commentId',
+  '/:caseId/comments/:commentId',
   authenticate,
   authorize(["admin", "investigator"]), // Officers cannot delete comments
   async (req: Request, res: Response, next: NextFunction) => {

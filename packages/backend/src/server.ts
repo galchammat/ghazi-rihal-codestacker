@@ -9,6 +9,7 @@ import evidenceDeletionRoutes from "./routes/evidenceDeletion";
 import personsRoutes from "./routes/persons";
 import auditLogRoutes from "./routes/auditLogs";
 import analyticsRoutes from "./routes/analytics";
+import commentRoutes from "./routes/comments";
 import pdfRoutes from "./routes/pdf";
 import { errorHandler } from "./middleware/errorHandler";
 
@@ -30,6 +31,7 @@ app.use("/cases", personsRoutes);
 app.use("/cases", auditLogRoutes);
 app.use("/cases", analyticsRoutes);
 app.use("/cases", pdfRoutes);
+app.use("/cases", commentRoutes);
 
 // Use report routes
 app.use("/reports", reportRoutes);
