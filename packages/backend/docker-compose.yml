@@ -1,4 +1,19 @@
+version: '3.8'
+
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend_app
+    ports:
+      - "3000:3000" # Map container port 3000 to host port 3000
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+      - /app/node_modules
+
   db:
     image: postgres:latest
     container_name: rds
@@ -11,7 +26,6 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     command: postgres -c log_statement=all
-
 
 volumes:
   pgdata:
