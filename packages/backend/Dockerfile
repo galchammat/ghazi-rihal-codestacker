@@ -19,8 +19,8 @@ RUN npm run build
 # Expose the port your app runs on (e.g., 3000)
 EXPOSE 3000
 
-# Set the environment variable for production
-ENV NODE_ENV=production
+# Set the environment variable for production - disabled (read from .env in startup script)
+# ENV NODE_ENV=production
 
 # Start the application using the production script
 CMD ["npm", "run", "start:prod"]

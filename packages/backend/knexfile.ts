@@ -23,7 +23,7 @@ const config: { [key: string]: Knex.Config } = {
 
   production: {
     client: "postgresql",
-    connection: process.env.PG_URI,
+    connection: process.env.DATABASE_URL,
     pool: {
       min: 2,
       max: 10
